@@ -68,7 +68,7 @@ func UpdateAllInfo() (bool, error) {
 //保有資産をログに出力します
 func PrintDeposit() {
 	fmt.Println("----保有資産-----")
-	fmt.Printf("btc:%f\n", latestAccountInfo.Return.Deposit.Btc)
+	fmt.Printf("btc:%f(1BTC=%f)\n", latestAccountInfo.Return.Deposit.Btc, latestBoard.Asks[0][0])
 	fmt.Printf("jpy:%f\n", latestAccountInfo.Return.Deposit.Jpy)
 	fmt.Printf("総資産:%f\n", (latestBoard.Asks[0][0]*latestAccountInfo.Return.Deposit.Btc)+latestAccountInfo.Return.Deposit.Jpy)
 	fmt.Printf("pos:%d\n", GetPositionNum())
@@ -109,9 +109,16 @@ func GetOrderFromLastTradePriceAndConfig() *Order {
 		price = GetLastPrice() / (1 + config.TakeProfitRange)
 	}
 
+	limit := price * (1 + config.TakeProfitRange)
+
+	//ポジション数が1の時は現時点価格からレンジ下げた価格を購入価格とする
+	if GetPositionNum() == 1 {
+		price = latestBoard.Bids[0][0] * (1 - config.BuyRange)
+	}
+
 	retOrder := &Order{
 		price,
-		price * (1 + config.TakeProfitRange),
+		limit,
 		useJpy / price,
 		useJpy,
 	}
@@ -136,7 +143,7 @@ func GetMarketPriceOrder(useJpy float64) *Order {
 	}
 	retOrder := &Order{
 		retPrice,
-		retPrice * (1 + config.TakeProfitRange),
+		50000000, //成行買いのときには実質利益確定しない(TODO: ここでそれやるのいけてない)
 		canAmount,
 		useJpy,
 	}
@@ -149,13 +156,14 @@ func GetRemainJpy() float64 {
 }
 
 //通っていない買い注文があるかどうかを返却します
-func HasLongOrder() bool {
+func GetLongOrderCount() int {
+	ret := 0
 	for _, order := range latestActiveOrderInfo.Return {
 		if order.Action == "bid" {
-			return true
+			ret++
 		}
 	}
-	return false
+	return ret
 }
 
 //最後の取引の約定価格を返却します,action:ask(売り) bid(買い)
@@ -197,10 +205,12 @@ func GetPositionNum() int {
 //注文structから実際に注文を行います
 //最大ポジション数に達した場合は実行されません
 func BuyFromOrder(order *Order) {
+
 	if GetPositionNum() >= config.MaxPositionCount {
 		fmt.Println("最大ポジション数に達しました。")
 		return
 	}
+
 	res, err := api.GetLongPosition(order.Price, order.Limit, order.Amount)
 	if err != nil {
 		fmt.Print(err)
@@ -212,6 +222,24 @@ func BuyFromOrder(order *Order) {
 	}
 	fmt.Printf("注文に成功しました。\n")
 	api.PrettyPrint(order)
+}
+
+//現時点と同じか、高い価格の注文があるかどうかを返却します
+func IsSameOrHigherOrderExist(order *Order) bool {
+
+	amount := float64(api.Round(order.Amount, 1.0, 4))
+	price := float64(api.Round5(order.Price))
+
+	for _, serverOrder := range latestActiveOrderInfo.Return {
+		if serverOrder.Amount == amount && serverOrder.Price == price && serverOrder.Action == "bid" {
+			return true
+		}
+		if serverOrder.Price > order.Price && serverOrder.Action == "bid" {
+			return true
+		}
+	}
+
+	return false
 }
 
 //全てのLong注文をキャンセルします

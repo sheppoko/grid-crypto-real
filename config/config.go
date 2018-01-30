@@ -1,7 +1,11 @@
 package config
 
 const (
-	BuyRange         = 0.001
-	TakeProfitRange  = 0.001
-	MaxPositionCount = 50
+	Debug = 0
+)
+
+var (
+	BuyRange         = 0.0005
+	TakeProfitRange  = 0.0005
+	MaxPositionCount = 100
 )

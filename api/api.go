@@ -180,7 +180,7 @@ func CancelOrder(orderID int) (*CancelOrderResponse, error) {
 
 //与えられた引数を元にfetchPrivateApiし、interfaceにマーシャルします
 func fetchPrivateAPI(queryString string, result interface{}, sanitizeFunction func(string) string) (interface{}, error) {
-	time.Sleep(1 * time.Second) // 1秒休む
+	resty.SetTimeout(time.Duration(30 * time.Second))
 	//jsonレスポンスの補正が不要な場合
 	if sanitizeFunction == nil {
 		resp, err := resty.R().SetHeader("key", APIKey).
@@ -245,7 +245,7 @@ func accountInfoRequestParamString() string {
 
 func tradeHistroyParamString() string {
 	base := commonPrivateRequestParamString()
-	retString := base + "&count=1000&order=DESC&currency_pair=btc_jpy&method=" + TradeHistoryMethod
+	retString := base + "&count=100&order=DESC&currency_pair=btc_jpy&method=" + TradeHistoryMethod
 	return retString
 }
 
@@ -281,7 +281,7 @@ func sellBtcParamString(amount float64) string {
 //プライベートAPI呼び出しに必要な共通のリクエストパラ���ータを取得します
 func commonPrivateRequestParamString() string {
 	incrementalCounter += 0.001
-	nonce := strconv.FormatFloat(float64(time.Now().Unix())+incrementalCounter, 'f', 4, 64)
+	nonce := strconv.FormatFloat(float64(time.Now().Unix())+incrementalCounter, 'f', 3, 64)
 	retString := "nonce=" + nonce
 	return retString
 }
