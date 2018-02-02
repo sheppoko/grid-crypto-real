@@ -10,7 +10,7 @@ import (
 func main() {
 	songiriMode := false
 	for {
-		time.Sleep(1 * time.Second) // 3秒休む
+		time.Sleep(2 * time.Second) // 休む
 		_, err := adapter.UpdateAllInfo()
 		if err != nil {
 			fmt.Println(err)

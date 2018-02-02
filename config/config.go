@@ -5,7 +5,7 @@ const (
 )
 
 var (
-	BuyRange         = 0.0005
-	TakeProfitRange  = 0.0005
-	MaxPositionCount = 100
+	BuyRange         = 0.002
+	TakeProfitRange  = 0.002
+	MaxPositionCount = 60
 )

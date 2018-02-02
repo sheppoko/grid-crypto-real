@@ -5,6 +5,8 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"math"
 	"regexp"
@@ -17,14 +19,13 @@ import (
 const (
 	PrivateAPIEndpoint  = "https://api.zaif.jp/tapi"
 	BtcBoardAPIEndpoint = "https://api.zaif.jp/api/1/depth/btc_jpy"
-	APIKey              = ""
+	APIKey              = "d95945e8-d8f0-40dd-90a9-e8aa2e9f15c6"
 	APISecret           = ""
-
-	AccountInfoMethod  = "get_info2"
-	TradeHistoryMethod = "trade_history"
-	TradeMethod        = "trade"
-	ActiveOrderMethod  = "active_orders"
-	CancelOrderMethod  = "cancel_order"
+	AccountInfoMethod   = "get_info2"
+	TradeHistoryMethod  = "trade_history"
+	TradeMethod         = "trade"
+	ActiveOrderMethod   = "active_orders"
+	CancelOrderMethod   = "cancel_order"
 
 	CommentPrefix = "fromBot"
 )
@@ -172,6 +173,7 @@ func GetLongPosition(price float64, limit float64, amount float64) (*TradeRespon
 func CancelOrder(orderID int) (*CancelOrderResponse, error) {
 	cancelResponse, err := fetchPrivateAPI(cancelOrderParamString(orderID), &CancelOrderResponse{}, nil)
 	if err != nil {
+		fmt.Println("注文キャンセル時にエラーが発生しました", err)
 		return nil, err
 	}
 	return cancelResponse.(*CancelOrderResponse), nil
@@ -216,6 +218,10 @@ func fetchBoardAPI() (*Board, error) {
 	if err != nil {
 		return nil, err
 	}
+	board := resp.Result().(*Board)
+	if board == nil || board.Bids == nil || len(board.Bids) == 0 || len(board.Bids[0]) == 0 {
+		return nil, errors.New("不正な買い板を取得しました")
+	}
 	return resp.Result().(*Board), nil
 }
 
@@ -245,13 +251,13 @@ func accountInfoRequestParamString() string {
 
 func tradeHistroyParamString() string {
 	base := commonPrivateRequestParamString()
-	retString := base + "&count=100&order=DESC&currency_pair=btc_jpy&method=" + TradeHistoryMethod
+	retString := base + "&count=3&order=DESC&currency_pair=btc_jpy&method=" + TradeHistoryMethod
 	return retString
 }
 
 func activeOrderParamString() string {
 	base := commonPrivateRequestParamString()
-	retString := base + "&count=1000&currency_pair=btc_jpy&method=" + ActiveOrderMethod
+	retString := base + "&count=3&currency_pair=btc_jpy&method=" + ActiveOrderMethod
 	return retString
 }
 

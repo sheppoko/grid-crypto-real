@@ -68,7 +68,7 @@ func UpdateAllInfo() (bool, error) {
 //保有資産をログに出力します
 func PrintDeposit() {
 	fmt.Println("----保有資産-----")
-	fmt.Printf("btc:%f(1BTC=%f)\n", latestAccountInfo.Return.Deposit.Btc, latestBoard.Asks[0][0])
+	fmt.Printf("btc:%f(1BTC=%f)\n", latestAccountInfo.Return.Deposit.Btc)
 	fmt.Printf("jpy:%f\n", latestAccountInfo.Return.Deposit.Jpy)
 	fmt.Printf("総資産:%f\n", (latestBoard.Asks[0][0]*latestAccountInfo.Return.Deposit.Btc)+latestAccountInfo.Return.Deposit.Jpy)
 	fmt.Printf("pos:%d\n", GetPositionNum())
@@ -100,7 +100,7 @@ func GetOrderFromLastTradePriceAndConfig() *Order {
 	price := 0.0
 
 	if GetLastPrice() == 0 || GetPositionNum() == 0 {
-		return GetMarketPriceOrder(useJpy)
+		return GetMarketPriceOrder(useJpy, 50000000)
 	}
 
 	if isLastTradeLong() {
@@ -126,7 +126,7 @@ func GetOrderFromLastTradePriceAndConfig() *Order {
 }
 
 //板を参照し使用するJPYから適切な注文を作成します
-func GetMarketPriceOrder(useJpy float64) *Order {
+func GetMarketPriceOrder(useJpy float64, limit float64) *Order {
 	canAmount := 0.0
 	lastJpy := useJpy
 	retPrice := 0.0
@@ -143,7 +143,7 @@ func GetMarketPriceOrder(useJpy float64) *Order {
 	}
 	retOrder := &Order{
 		retPrice,
-		50000000, //成行買いのときには実質利益確定しない(TODO: ここでそれやるのいけてない)
+		limit,
 		canAmount,
 		useJpy,
 	}
@@ -269,6 +269,7 @@ func CancelAllOrder() (bool, error) {
 		if cancelResponse.Success != 1 {
 			return false, errors.New(cancelResponse.Error)
 		}
+		fmt.Println("注文を1本キャンセルしました")
 	}
 	fmt.Println("全ての注文をキャンセルしました")
 	return true, nil
