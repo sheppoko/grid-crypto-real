@@ -20,7 +20,7 @@ const (
 	PrivateAPIEndpoint  = "https://api.zaif.jp/tapi"
 	BtcBoardAPIEndpoint = "https://api.zaif.jp/api/1/depth/btc_jpy"
 	APIKey              = "d95945e8-d8f0-40dd-90a9-e8aa2e9f15c6"
-	APISecret           = ""
+	APISecret           = "e5fad24a-ff32-4f38-9b66-a1e5ecb75cc5"
 	AccountInfoMethod   = "get_info2"
 	TradeHistoryMethod  = "trade_history"
 	TradeMethod         = "trade"

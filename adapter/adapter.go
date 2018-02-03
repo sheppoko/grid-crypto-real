@@ -109,13 +109,13 @@ func GetOrderFromLastTradePriceAndConfig() *Order {
 		price = GetLastPrice() / (1 + config.TakeProfitRange)
 	}
 
-	limit := price * (1 + config.TakeProfitRange)
-
 	//ポジション数が1の時は現時点価格からレンジ下げた価格を購入価格とする
 	if GetPositionNum() == 1 {
 		price = latestBoard.Bids[0][0] * (1 - config.BuyRange)
 	}
+	limit := price * (1 + config.TakeProfitRange)
 
+	//TODO:コメントに指値額をいれてそれをGetLastPrice()としてあつかう
 	retOrder := &Order{
 		price,
 		limit,
