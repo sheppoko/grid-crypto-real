@@ -8,7 +8,6 @@ import (
 )
 
 func main() {
-	songiriMode := false
 	for {
 		time.Sleep(2 * time.Second) // 休む
 		_, err := adapter.UpdateAllInfo()
@@ -19,22 +18,11 @@ func main() {
 		fmt.Println("==================================================")
 		adapter.PrintOrderInfo()
 		adapter.PrintDeposit()
-		songiriMode = adapter.ShouldSongiri()
 
 		if config.Debug == 1 {
 			continue
 		}
 
-		//損切りモード
-		if songiriMode {
-			ret, errCancel := adapter.CancelAllOrder()
-			if ret == true && errCancel == nil {
-				if adapter.SellAllBtc() {
-					songiriMode = false
-				}
-			}
-			continue
-		}
 		order := adapter.GetOrderFromLastTradePriceAndConfig()
 		if adapter.IsSameOrHigherOrderExist(order) && adapter.GetLongOrderCount() == 1 {
 			fmt.Println("すでに同様の注文/もしくは高い注文があるためスキップします")

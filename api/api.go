@@ -262,7 +262,7 @@ func activeOrderParamString() string {
 }
 
 func LongParamString(price float64, limit float64, amount float64, comment string) string {
-	amount = Round(amount, 1.0, 4)
+	amount = Round(amount, 4)
 	base := commonPrivateRequestParamString()
 	priceString := strconv.Itoa(Round5(price))
 	limitString := strconv.Itoa(Round5(limit))
@@ -313,16 +313,8 @@ func Round5(num float64) int {
 	return ceilPrice
 }
 
-func Round(val float64, roundOn float64, places int) (newVal float64) {
-	var round float64
-	pow := math.Pow(10, float64(places))
-	digit := pow * val
-	_, div := math.Modf(digit)
-	if div >= roundOn {
-		round = math.Ceil(digit)
-	} else {
-		round = math.Floor(digit)
-	}
-	newVal = round / pow
-	return
+//小数を指定の位置で四捨五入します
+func Round(f float64, places int) float64 {
+	shift := math.Pow(10, float64(places))
+	return math.Floor(f*shift+.5) / shift
 }

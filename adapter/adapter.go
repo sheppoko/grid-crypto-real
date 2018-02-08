@@ -227,7 +227,7 @@ func BuyFromOrder(order *Order) {
 //現時点と同じか、高い価格の注文があるかどうかを返却します
 func IsSameOrHigherOrderExist(order *Order) bool {
 
-	amount := float64(api.Round(order.Amount, 1.0, 4))
+	amount := float64(api.Round(order.Amount, 4))
 	price := float64(api.Round5(order.Price))
 
 	for _, serverOrder := range latestActiveOrderInfo.Return {
