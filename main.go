@@ -16,6 +16,7 @@ func main() {
 			continue
 		}
 		fmt.Println("==================================================")
+		adapter.CancelLowestOrderIfOrderFull()
 		adapter.PrintOrderInfo()
 		adapter.PrintDeposit()
 
@@ -23,16 +24,14 @@ func main() {
 			continue
 		}
 
-		order := adapter.GetOrderFromLastTradePriceAndConfig()
-		if adapter.IsSameOrHigherOrderExist(order) && adapter.GetLongOrderCount() == 1 {
-			fmt.Println("すでに同様の注文/もしくは高い注文があるためスキップします")
-			continue
+		orders := adapter.GetOrderFromLastTradePriceAndConfig()
+		for _, order := range orders {
+			if adapter.HasRangeBuyOrder(order.Price) {
+				fmt.Println("すでに同様の注文/もしくは高い注文があるためスキップします", order.Price)
+			} else {
+				adapter.BuyFromOrder(order)
+			}
 		}
-		res, err := adapter.CancelAllLongOrder()
-		if err != nil && !res {
-			fmt.Printf("キャンセル時にエラーが発生しました.%v\n", err)
-			continue
-		}
-		adapter.BuyFromOrder(order)
+
 	}
 }

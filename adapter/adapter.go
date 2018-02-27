@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"grid-crypto-real/api"
 	"grid-crypto-real/config"
+	"math"
 )
 
 //注文の構造体です。注文時に使用します
@@ -92,7 +93,7 @@ func PrintOrderInfo() {
 //取引履歴と設定を元に適切な注文を作成します。
 //ポジションが無い場合は成行買い、
 //ポジションが存在する場合は最後に約定した価格から、下のグリッド価格を算出し注文structを作成します
-func GetOrderFromLastTradePriceAndConfig() *Order {
+func GetOrderFromLastTradePriceAndConfig() []*Order {
 	positionNum := GetPositionNum()
 	remainJpy := GetRemainJpy()
 	remainPosition := config.MaxPositionCount - positionNum
@@ -100,7 +101,7 @@ func GetOrderFromLastTradePriceAndConfig() *Order {
 	price := 0.0
 
 	if GetLastPrice() == 0 || GetPositionNum() == 0 {
-		return GetMarketPriceOrder(useJpy, 50000000)
+		return []*Order{GetMarketPriceOrder(useJpy, 50000000)}
 	}
 
 	if isLastTradeLong() {
@@ -113,16 +114,24 @@ func GetOrderFromLastTradePriceAndConfig() *Order {
 	if GetPositionNum() == 1 {
 		price = latestBoard.Bids[0][0] * (1 - config.BuyRange)
 	}
-	limit := price * (1 + config.TakeProfitRange)
-
-	//TODO:コメントに指値額をいれてそれをGetLastPrice()としてあつかう
-	retOrder := &Order{
-		price,
-		limit,
-		useJpy / price,
-		useJpy,
+	buyMaxNum := config.MaxPositionCount - GetPositionNum()
+	if buyMaxNum >= config.MaxOrderCount {
+		buyMaxNum = config.MaxOrderCount
 	}
-	return retOrder
+	retArray := []*Order{}
+	for i := 0; i < buyMaxNum; i++ {
+		price = price * math.Pow((1-config.BuyRange), float64(i))
+		limit := price * (1 + config.TakeProfitRange)
+		//TODO:コメントに指値額をいれてそれをGetLastPrice()としてあつかう
+		retOrder := &Order{
+			price,
+			limit,
+			useJpy / price,
+			useJpy,
+		}
+		retArray = append(retArray, retOrder)
+	}
+	return retArray
 }
 
 //板を参照し使用するJPYから適切な注文を作成します
@@ -153,6 +162,25 @@ func GetMarketPriceOrder(useJpy float64, limit float64) *Order {
 //使用可能な残りJPYを返却します
 func GetRemainJpy() float64 {
 	return latestAccountInfo.Return.Funds.Jpy
+}
+
+func CancelLowestOrderIfOrderFull() {
+
+	if GetPositionNum() <= config.MaxOrderCount {
+		return
+	}
+	lowest := 1234567890.0
+	retOrderId := 0
+	for _, order := range latestActiveOrderInfo.Return {
+		if lowest > order.Price {
+			lowest = order.Price
+			retOrderId = order.ID
+		}
+	}
+	if retOrderId != 0 {
+		api.CancelOrder(retOrderId)
+	}
+
 }
 
 //通っていない買い注文があるかどうかを返却します
@@ -239,6 +267,16 @@ func IsSameOrHigherOrderExist(order *Order) bool {
 		}
 	}
 
+	return false
+}
+
+func HasRangeBuyOrder(price float64) bool {
+	activeOrder := latestActiveOrderInfo
+	for _, order := range activeOrder.Return {
+		if order.Action == "bid" && (math.Abs(order.Price-price) < price*config.BuyRange) {
+			return true
+		}
+	}
 	return false
 }
 
